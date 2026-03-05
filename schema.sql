@@ -14,21 +14,6 @@ CREATE TABLE IF NOT EXISTS youth (
   UNIQUE KEY uq_youth_name (name)
 );
 
-ALTER TABLE youth
-  ADD COLUMN IF NOT EXISTS date_of_birth VARCHAR(5) NOT NULL AFTER contact;
-
-ALTER TABLE youth
-  MODIFY COLUMN date_of_birth VARCHAR(5) NOT NULL;
-
-ALTER TABLE youth
-  ADD COLUMN IF NOT EXISTS gender ENUM('Male','Female') NOT NULL AFTER date_of_birth;
-
-ALTER TABLE youth
-  ADD COLUMN IF NOT EXISTS societal_groups TEXT NOT NULL AFTER area_of_interest;
-
-ALTER TABLE youth
-  ADD UNIQUE KEY uq_youth_name (name);
-
 CREATE TABLE IF NOT EXISTS admins (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   full_name VARCHAR(120) NOT NULL,
@@ -38,12 +23,6 @@ CREATE TABLE IF NOT EXISTS admins (
   password_hash VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-ALTER TABLE admins
-  ADD COLUMN IF NOT EXISTS role ENUM('super_admin','viewer') NOT NULL DEFAULT 'super_admin' AFTER username;
-
-ALTER TABLE admins
-  ADD COLUMN IF NOT EXISTS must_change_password TINYINT(1) NOT NULL DEFAULT 0 AFTER role;
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
