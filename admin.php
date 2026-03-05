@@ -325,6 +325,7 @@ $allowedSocietalGroups = [
     'USHERS',
     'DOMINIC CHOIR',
     'CHURCH BAND',
+    'Senior Choir',
     'ST.THERESA',
     'CHRISTIAN SONS & DAUGHTERS',
     'MEDIA TEAM',
@@ -332,6 +333,15 @@ $allowedSocietalGroups = [
     'COSRA',
     'LEGION OF MARY',
     'CYO',
+];
+$allowedAreaInterests = [
+    'Ministry (Eg. Preaching/Evangelism)',
+    'Health',
+    'Education',
+    'Business and Finance',
+    'Sports',
+    'Welfare',
+    'OTHER',
 ];
 
 if (isset($_GET['logout']) && $isAdmin) {
@@ -643,6 +653,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'upda
         $maritalStatus = trim($_POST['marital_status'] ?? '');
         $profession = trim($_POST['profession'] ?? '');
         $areaOfInterest = trim($_POST['area_of_interest'] ?? '');
+        $areaOfInterestOther = trim($_POST['area_of_interest_other'] ?? '');
+        $areaOfInterestValue = ($areaOfInterest === 'OTHER') ? $areaOfInterestOther : $areaOfInterest;
         $societalGroups = $_POST['societal_groups'] ?? [];
         $searchTerm = trim($_POST['q'] ?? $searchTerm);
 
@@ -655,12 +667,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'upda
 
         if ($memberId <= 0) {
             $memberError = 'Invalid member selected.';
-        } elseif ($name === '' || $contact === '' || $dateOfBirth === '' || $profession === '' || $areaOfInterest === '') {
+        } elseif ($name === '' || $contact === '' || $dateOfBirth === '' || $profession === '') {
             $memberError = 'All member fields are required.';
         } elseif (!in_array($gender, $allowedGenders, true)) {
             $memberError = 'Please select a valid gender.';
         } elseif (!in_array($maritalStatus, $allowedStatuses, true)) {
             $memberError = 'Please select a valid marital status.';
+        } elseif (!in_array($areaOfInterest, $allowedAreaInterests, true)) {
+            $memberError = 'Please select a valid area of interest.';
+        } elseif ($areaOfInterest === 'OTHER' && $areaOfInterestOther === '') {
+            $memberError = 'Please type your specific area of interest.';
         } elseif (!preg_match('/^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])$/', $dateOfBirth)) {
             $memberError = 'Date of birth must be in DD/MM format.';
         } else {
@@ -716,7 +732,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'upda
                 ':gender' => $gender,
                 ':marital_status' => $maritalStatus,
                 ':profession' => $profession,
-                ':area_of_interest' => $areaOfInterest,
+                ':area_of_interest' => $areaOfInterestValue,
                 ':societal_groups' => implode(', ', $societalGroups),
                 ':id' => $memberId,
             ]);
@@ -1452,7 +1468,12 @@ if ($isAdmin) {
       </div>
 
       <?php if ($editMember && $isSuperAdmin): ?>
-        <?php $editSelectedGroups = array_values(array_filter(array_map('trim', explode(',', (string)$editMember['societal_groups'])))); ?>
+        <?php
+          $editSelectedGroups = array_values(array_filter(array_map('trim', explode(',', (string)$editMember['societal_groups']))));
+          $editAreaValue = trim((string)$editMember['area_of_interest']);
+          $editAreaSelection = in_array($editAreaValue, $allowedAreaInterests, true) ? $editAreaValue : 'OTHER';
+          $editAreaOther = ($editAreaSelection === 'OTHER') ? $editAreaValue : '';
+        ?>
         <?php $editDobDisplay = normalizeDobToDayMonth((string)$editMember['date_of_birth']); ?>
         <div class="edit-card no-print" id="edit_member_section">
           <h2 class="section-title" style="margin-top:0;">Edit Member Details</h2>
@@ -1523,7 +1544,18 @@ if ($isAdmin) {
               </div>
               <div class="full">
                 <label class="field-label" for="edit_area_of_interest">Area of Interest</label>
-                <input id="edit_area_of_interest" name="area_of_interest" type="text" value="<?php echo htmlspecialchars($editMember['area_of_interest']); ?>" required>
+                <select id="edit_area_of_interest" name="area_of_interest" required>
+                  <option value="">Select area of interest</option>
+                  <?php foreach ($allowedAreaInterests as $interest): ?>
+                    <option value="<?php echo htmlspecialchars($interest); ?>" <?php echo ($editAreaSelection === $interest) ? 'selected' : ''; ?>>
+                      <?php echo htmlspecialchars($interest); ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div class="full" id="edit_area_of_interest_other_wrap" <?php echo ($editAreaSelection === 'OTHER') ? '' : 'hidden'; ?>>
+                <label class="field-label" for="edit_area_of_interest_other">Specify Other Area of Interest</label>
+                <input id="edit_area_of_interest_other" name="area_of_interest_other" type="text" value="<?php echo htmlspecialchars($editAreaOther); ?>">
               </div>
               <div class="full">
                 <label class="field-label">Societal Group(s)</label>
@@ -1782,6 +1814,22 @@ if ($isAdmin) {
 
     refreshYouthStats();
     setInterval(refreshYouthStats, 5000);
+
+    var editAreaSelect = document.getElementById('edit_area_of_interest');
+    var editAreaOtherWrap = document.getElementById('edit_area_of_interest_other_wrap');
+    var editAreaOtherInput = document.getElementById('edit_area_of_interest_other');
+    if (editAreaSelect && editAreaOtherWrap && editAreaOtherInput) {
+      var syncEditAreaOther = function () {
+        var isOther = editAreaSelect.value === 'OTHER';
+        editAreaOtherWrap.hidden = !isOther;
+        editAreaOtherInput.required = isOther;
+        if (!isOther) {
+          editAreaOtherInput.value = '';
+        }
+      };
+      editAreaSelect.addEventListener('change', syncEditAreaOther);
+      syncEditAreaOther();
+    }
 
     var editNoSociety = document.querySelector('#edit_member_section input[name="societal_groups[]"][value="No Society"]');
     if (editNoSociety) {

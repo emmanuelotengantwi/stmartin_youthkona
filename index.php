@@ -92,6 +92,7 @@ $allowedSocietalGroups = [
     'USHERS',
     'DOMINIC CHOIR',
     'CHURCH BAND',
+    'Senior Choir',
     'ST.THERESA',
     'CHRISTIAN SONS & DAUGHTERS',
     'MEDIA TEAM',
@@ -103,6 +104,15 @@ $allowedSocietalGroups = [
     'Students Union',
     'CWA',
 ];
+$allowedAreaInterests = [
+    'Ministry (Eg. Preaching/Evangelism)',
+    'Health',
+    'Education',
+    'Business and Finance',
+    'Sports',
+    'Welfare',
+    'OTHER',
+];
 $formInput = [
     'name' => '',
     'contact' => '',
@@ -111,6 +121,8 @@ $formInput = [
     'marital_status' => '',
     'profession' => '',
     'area_of_interest' => '',
+    'area_of_interest_other' => '',
+    'area_of_interest_value' => '',
     'societal_groups' => [],
 ];
 
@@ -134,6 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $maritalStatus = trim($_POST['marital_status'] ?? '');
     $profession = trim($_POST['profession'] ?? '');
     $areaOfInterest = trim($_POST['area_of_interest'] ?? '');
+    $areaOfInterestOther = trim($_POST['area_of_interest_other'] ?? '');
+    $areaOfInterestValue = ($areaOfInterest === 'OTHER') ? $areaOfInterestOther : $areaOfInterest;
     $societalGroups = $_POST['societal_groups'] ?? [];
     if (!is_array($societalGroups)) {
         $societalGroups = [];
@@ -175,6 +189,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Profession is required.';
     }
 
+    if ($csrfValid && !in_array($areaOfInterest, $allowedAreaInterests, true)) {
+        $errors[] = 'Please select a valid area of interest.';
+    } elseif ($csrfValid && $areaOfInterest === 'OTHER' && $areaOfInterestOther === '') {
+        $errors[] = 'Please type your specific area of interest.';
+    }
+
     if ($csrfValid && !$societalGroups) {
         $errors[] = 'Please select at least one societal group.';
     } else {
@@ -205,6 +225,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'marital_status' => $maritalStatus,
         'profession' => $profession,
         'area_of_interest' => $areaOfInterest,
+        'area_of_interest_other' => $areaOfInterestOther,
+        'area_of_interest_value' => $areaOfInterestValue,
         'societal_groups' => $societalGroups,
     ];
 
@@ -230,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':gender' => $gender,
                 ':marital_status' => $maritalStatus,
                 ':profession' => $profession,
-                ':area_of_interest' => $areaOfInterest,
+                ':area_of_interest' => $areaOfInterestValue,
                 ':societal_groups' => $societalGroupsText,
             ]);
 
@@ -243,6 +265,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'marital_status' => '',
                 'profession' => '',
                 'area_of_interest' => '',
+                'area_of_interest_other' => '',
+                'area_of_interest_value' => '',
                 'societal_groups' => [],
             ];
             $formShowSubmitOnly = false;
@@ -676,7 +700,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="full">
           <label for="area_of_interest">Area of Interest</label>
-          <input id="area_of_interest" name="area_of_interest" type="text" value="<?php echo htmlspecialchars($formInput['area_of_interest']); ?>">
+          <select id="area_of_interest" name="area_of_interest" required>
+            <option value="">Select area of interest</option>
+            <?php foreach ($allowedAreaInterests as $interest): ?>
+              <option value="<?php echo htmlspecialchars($interest); ?>" <?php echo ($formInput['area_of_interest'] === $interest) ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars($interest); ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="full" id="area_of_interest_other_wrap" <?php echo ($formInput['area_of_interest'] === 'OTHER') ? '' : 'hidden'; ?>>
+          <label for="area_of_interest_other">Specify Other Area of Interest</label>
+          <input id="area_of_interest_other" name="area_of_interest_other" type="text" value="<?php echo htmlspecialchars($formInput['area_of_interest_other']); ?>">
         </div>
 
         <div class="full">
@@ -721,7 +757,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="preview-item"><strong>Gender:</strong> <?php echo htmlspecialchars($formInput['gender']); ?></div>
           <div class="preview-item"><strong>Marital Status:</strong> <?php echo htmlspecialchars($formInput['marital_status']); ?></div>
           <div class="preview-item"><strong>Profession:</strong> <?php echo htmlspecialchars($formInput['profession']); ?></div>
-          <div class="preview-item" style="grid-column:1/-1;"><strong>Area of Interest:</strong> <?php echo htmlspecialchars($formInput['area_of_interest']); ?></div>
+          <div class="preview-item" style="grid-column:1/-1;"><strong>Area of Interest:</strong> <?php echo htmlspecialchars($formInput['area_of_interest_value']); ?></div>
           <div class="preview-item" style="grid-column:1/-1;"><strong>Societal Group(s):</strong> <?php echo htmlspecialchars(implode(', ', $formInput['societal_groups'])); ?></div>
         </div>
         <form method="post" action="">
@@ -733,6 +769,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <input type="hidden" name="marital_status" value="<?php echo htmlspecialchars($formInput['marital_status']); ?>">
           <input type="hidden" name="profession" value="<?php echo htmlspecialchars($formInput['profession']); ?>">
           <input type="hidden" name="area_of_interest" value="<?php echo htmlspecialchars($formInput['area_of_interest']); ?>">
+          <input type="hidden" name="area_of_interest_other" value="<?php echo htmlspecialchars($formInput['area_of_interest_other']); ?>">
           <?php foreach ($formInput['societal_groups'] as $group): ?>
             <input type="hidden" name="societal_groups[]" value="<?php echo htmlspecialchars($group); ?>">
           <?php endforeach; ?>
@@ -758,6 +795,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.body.classList.remove('page-preload');
       }, 1100);
     });
+  })();
+</script>
+<script>
+  (function () {
+    var areaSelect = document.getElementById('area_of_interest');
+    var otherWrap = document.getElementById('area_of_interest_other_wrap');
+    var otherInput = document.getElementById('area_of_interest_other');
+    if (!areaSelect || !otherWrap || !otherInput) return;
+
+    function syncAreaOther() {
+      var isOther = areaSelect.value === 'OTHER';
+      otherWrap.hidden = !isOther;
+      otherInput.required = isOther;
+      if (!isOther) {
+        otherInput.value = '';
+      }
+    }
+
+    areaSelect.addEventListener('change', syncAreaOther);
+    syncAreaOther();
   })();
 </script>
 <script>
@@ -824,5 +881,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </script>
 </body>
 </html>
-
 
