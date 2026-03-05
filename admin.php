@@ -1186,68 +1186,80 @@ if ($isAdmin) {
       </div>
     <?php endif; ?>
 
-    <?php if ($adminCount === 0): ?>
-      <h2 class="section-title">Set Up First Admin Account</h2>
-      <p class="section-note">Create the first administrator account to control access to this dashboard.</p>
-      <?php if ($setupError !== ''): ?>
-        <div class="alert error"><?php echo htmlspecialchars($setupError); ?></div>
-      <?php endif; ?>
-      <?php if ($setupSuccess !== ''): ?>
-        <div class="alert success"><?php echo htmlspecialchars($setupSuccess); ?></div>
-      <?php endif; ?>
+    <?php if (!$isAdmin): ?>
       <div class="auth-wrap no-print">
-        <form method="post" action="">
-          <input type="hidden" name="action" value="register_admin">
-          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrfToken()); ?>">
-          <div class="form-grid">
-            <div>
-              <label class="field-label" for="full_name">Full Name</label>
-              <input id="full_name" name="full_name" type="text" required>
-            </div>
-            <div>
-              <label class="field-label" for="username">Username</label>
-              <input id="username" name="username" type="text" required>
-            </div>
-            <div>
-              <label class="field-label" for="password">Password</label>
-              <input id="password" name="password" type="password" required>
-            </div>
-            <div>
-              <label class="field-label" for="confirm_password">Confirm Password</label>
-              <input id="confirm_password" name="confirm_password" type="password" required>
-            </div>
-            <div class="full">
-              <p class="password-hint">Password must be more than 6 characters and include uppercase, lowercase, number, and symbol.</p>
-            </div>
-            <div class="full form-actions">
-              <button class="btn btn-main" type="submit">Create Admin Account</button>
-            </div>
-          </div>
-        </form>
-      </div>
+        <h2 class="section-title" style="font-size: 20px;">Admin Access</h2>
+        <p class="section-note">Choose an option below.</p>
+        <div class="actions" style="margin-top:0;">
+          <button id="show_login_btn" type="button" class="btn btn-main">Login</button>
+          <button id="show_create_btn" type="button" class="btn btn-muted">Create Account</button>
+        </div>
 
-    <?php elseif (!$isAdmin): ?>
-      <div class="auth-wrap compact no-print">
-        <h2 class="section-title" style="font-size: 20px;">Admin Login</h2>
-        <p class="section-note">Sign in with your admin account credentials.</p>
-        <?php if ($loginError !== ''): ?>
-          <div class="alert error"><?php echo htmlspecialchars($loginError); ?></div>
-        <?php endif; ?>
-        <form method="post" action="">
-          <input type="hidden" name="action" value="login">
-          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrfToken()); ?>">
-          <label class="field-label" for="username">Username</label>
-          <input id="username" name="username" type="text" required>
+        <div id="login_view" style="margin-top: 12px;">
+          <?php if ($loginError !== ''): ?>
+            <div class="alert error"><?php echo htmlspecialchars($loginError); ?></div>
+          <?php endif; ?>
+          <form method="post" action="">
+            <input type="hidden" name="action" value="login">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrfToken()); ?>">
+            <label class="field-label" for="login_username">Username</label>
+            <input id="login_username" name="username" type="text" required>
 
-          <div style="margin-top: 10px;">
-            <label class="field-label" for="password">Password</label>
-            <input id="password" name="password" type="password" required>
-          </div>
+            <div style="margin-top: 10px;">
+              <label class="field-label" for="login_password">Password</label>
+              <input id="login_password" name="password" type="password" required>
+            </div>
 
-          <div class="form-actions" style="margin-top: 12px;">
-            <button class="btn btn-main" type="submit">Login</button>
-          </div>
-        </form>
+            <div class="form-actions" style="margin-top: 12px;">
+              <button class="btn btn-main" type="submit">Login</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="create_view" style="margin-top: 12px;" hidden>
+          <?php if ($setupError !== ''): ?>
+            <div class="alert error"><?php echo htmlspecialchars($setupError); ?></div>
+          <?php endif; ?>
+          <?php if ($setupSuccess !== ''): ?>
+            <div class="alert success"><?php echo htmlspecialchars($setupSuccess); ?></div>
+          <?php endif; ?>
+
+          <?php if ($adminCount === 0): ?>
+            <p class="section-note">Create the first administrator account to control access to this dashboard.</p>
+            <form method="post" action="">
+              <input type="hidden" name="action" value="register_admin">
+              <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrfToken()); ?>">
+              <div class="form-grid">
+                <div>
+                  <label class="field-label" for="create_full_name">Full Name</label>
+                  <input id="create_full_name" name="full_name" type="text" required>
+                </div>
+                <div>
+                  <label class="field-label" for="create_username">Username</label>
+                  <input id="create_username" name="username" type="text" required>
+                </div>
+                <div>
+                  <label class="field-label" for="create_password">Password</label>
+                  <input id="create_password" name="password" type="password" required>
+                </div>
+                <div>
+                  <label class="field-label" for="create_confirm_password">Confirm Password</label>
+                  <input id="create_confirm_password" name="confirm_password" type="password" required>
+                </div>
+                <div class="full">
+                  <p class="password-hint">Password must be more than 6 characters and include uppercase, lowercase, number, and symbol.</p>
+                </div>
+                <div class="full form-actions">
+                  <button class="btn btn-main" type="submit">Create Admin Account</button>
+                </div>
+              </div>
+            </form>
+          <?php else: ?>
+            <div class="alert" style="background:#fff4dd;color:#7a4c06;border:1px solid #f4d4a5;">
+              Account creation is available after Super Admin login. Please log in, then use "Create Additional Admin Account".
+            </div>
+          <?php endif; ?>
+        </div>
       </div>
 
     <?php elseif ($mustChangePassword): ?>
@@ -1542,6 +1554,47 @@ if ($isAdmin) {
     });
   })();
 </script>
+
+<?php if (!$isAdmin): ?>
+<script>
+  (function () {
+    var showLoginBtn = document.getElementById('show_login_btn');
+    var showCreateBtn = document.getElementById('show_create_btn');
+    var loginView = document.getElementById('login_view');
+    var createView = document.getElementById('create_view');
+    if (!showLoginBtn || !showCreateBtn || !loginView || !createView) return;
+
+    var shouldShowCreate = <?php echo (($setupError !== '' || $setupSuccess !== '') ? 'true' : 'false'); ?>;
+
+    function showLogin() {
+      loginView.hidden = false;
+      createView.hidden = true;
+      showLoginBtn.classList.add('btn-main');
+      showLoginBtn.classList.remove('btn-muted');
+      showCreateBtn.classList.add('btn-muted');
+      showCreateBtn.classList.remove('btn-main');
+    }
+
+    function showCreate() {
+      loginView.hidden = true;
+      createView.hidden = false;
+      showCreateBtn.classList.add('btn-main');
+      showCreateBtn.classList.remove('btn-muted');
+      showLoginBtn.classList.add('btn-muted');
+      showLoginBtn.classList.remove('btn-main');
+    }
+
+    showLoginBtn.addEventListener('click', showLogin);
+    showCreateBtn.addEventListener('click', showCreate);
+
+    if (shouldShowCreate) {
+      showCreate();
+    } else {
+      showLogin();
+    }
+  })();
+</script>
+<?php endif; ?>
 
 <?php if ($isAdmin && !$mustChangePassword): ?>
 <script>
