@@ -8,6 +8,11 @@ function defaultNewAdminPassword(): string
     return getenv('DEFAULT_NEW_ADMIN_PASSWORD') ?: 'ChangeMeNow!2026';
 }
 
+function adminRecoveryCode(): string
+{
+    return getenv('ADMIN_RECOVERY_CODE') ?: '';
+}
+
 function clientIp(): string
 {
     $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
@@ -484,10 +489,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'chan
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'register_admin') {
     $canRegister = ($adminCount === 0) || $isSuperAdmin;
+    $isRecoveryRegistration = false;
+    $recoveryCode = trim((string)($_POST['recovery_code'] ?? ''));
+
+    if (!$canRegister && !$isAdmin && $adminCount > 0) {
+        $expectedRecoveryCode = adminRecoveryCode();
+        if ($expectedRecoveryCode !== '' && hash_equals($expectedRecoveryCode, $recoveryCode)) {
+            $canRegister = true;
+            $isRecoveryRegistration = true;
+        }
+    }
 
     if (!$canRegister) {
         auditLog($pdo, null, 'unauthorized_register_attempt', 'Tried to register admin without access');
-        $setupError = 'You are not allowed to create an admin account.';
+        $setupError = 'You are not allowed to create an admin account. Use login or provide a valid recovery code.';
     } else {
         $fullName = trim($_POST['full_name'] ?? '');
         $username = strtolower(trim($_POST['username'] ?? ''));
@@ -496,6 +511,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'regi
             $role = 'viewer';
         }
         if ($adminCount === 0) {
+            $role = 'super_admin';
+        }
+        if ($isRecoveryRegistration) {
             $role = 'super_admin';
         }
 
@@ -509,14 +527,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'regi
             $setupError = 'Username must be 3-40 chars and contain only letters, numbers, ., _, -';
         }
 
-        if ($setupError === '' && $adminCount === 0) {
+        if ($setupError === '' && ($adminCount === 0 || $isRecoveryRegistration)) {
             $policyError = passwordPolicyError($password, $confirmPassword);
             if ($policyError !== '') {
                 $setupError = $policyError;
             }
         }
 
-        if ($setupError === '' && $adminCount > 0) {
+        if ($setupError === '' && $adminCount > 0 && !$isRecoveryRegistration) {
             $password = defaultNewAdminPassword();
             $confirmPassword = defaultNewAdminPassword();
             $newAdminMustChangePassword = 1;
@@ -550,7 +568,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'regi
                     'Created admin account: ' . $username . ' (' . $role . ')'
                 );
 
-                if ($adminCount === 0) {
+                if ($adminCount === 0 || $isRecoveryRegistration) {
                     $_SESSION['admin_id'] = $newAdminId;
                     $_SESSION['admin_name'] = $fullName;
                     $_SESSION['admin_role'] = $role;
@@ -562,7 +580,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'regi
                     $isSuperAdmin = ($role === 'super_admin');
                     $mustChangePassword = false;
                     $adminCount = 1;
-                    $setupSuccess = 'Admin account created and logged in.';
+                    $setupSuccess = $isRecoveryRegistration
+                        ? 'Recovery admin account created and logged in.'
+                        : 'Admin account created and logged in.';
                 } else {
                     $setupSuccess = 'New admin account created. Default password: ' . defaultNewAdminPassword() . ' (user must change it at first login).';
                 }
@@ -1255,9 +1275,46 @@ if ($isAdmin) {
               </div>
             </form>
           <?php else: ?>
-            <div class="alert" style="background:#fff4dd;color:#7a4c06;border:1px solid #f4d4a5;">
-              Account creation is available after Super Admin login. Please log in, then use "Create Additional Admin Account".
-            </div>
+            <?php if (adminRecoveryCode() !== ''): ?>
+              <p class="section-note">If you are locked out, use the recovery code to create a new Super Admin account.</p>
+              <form method="post" action="">
+                <input type="hidden" name="action" value="register_admin">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrfToken()); ?>">
+                <input type="hidden" name="role" value="super_admin">
+                <div class="form-grid">
+                  <div>
+                    <label class="field-label" for="recovery_code">Recovery Code</label>
+                    <input id="recovery_code" name="recovery_code" type="password" required>
+                  </div>
+                  <div>
+                    <label class="field-label" for="recovery_full_name">Full Name</label>
+                    <input id="recovery_full_name" name="full_name" type="text" required>
+                  </div>
+                  <div>
+                    <label class="field-label" for="recovery_username">Username</label>
+                    <input id="recovery_username" name="username" type="text" required>
+                  </div>
+                  <div>
+                    <label class="field-label" for="recovery_password">Password</label>
+                    <input id="recovery_password" name="password" type="password" required>
+                  </div>
+                  <div>
+                    <label class="field-label" for="recovery_confirm_password">Confirm Password</label>
+                    <input id="recovery_confirm_password" name="confirm_password" type="password" required>
+                  </div>
+                  <div class="full">
+                    <p class="password-hint">Password must be more than 6 characters and include uppercase, lowercase, number, and symbol.</p>
+                  </div>
+                  <div class="full form-actions">
+                    <button class="btn btn-main" type="submit">Create Recovery Admin</button>
+                  </div>
+                </div>
+              </form>
+            <?php else: ?>
+              <div class="alert" style="background:#fff4dd;color:#7a4c06;border:1px solid #f4d4a5;">
+                Account creation is available after Super Admin login. Please log in, then use "Create Additional Admin Account".
+              </div>
+            <?php endif; ?>
           <?php endif; ?>
         </div>
       </div>
