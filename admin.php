@@ -1056,6 +1056,29 @@ if ($isAdmin) {
       border-radius: 10px;
       padding: 10px 12px;
     }
+    .password-toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .password-toggle-wrap input {
+      flex: 1;
+    }
+    .password-toggle-btn {
+      border: 1px solid #d3c7aa;
+      background: #fffdf8;
+      color: #5f152b;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .password-toggle-btn:hover {
+      background: #f8efe0;
+    }
     .stats-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -1608,6 +1631,40 @@ if ($isAdmin) {
         loader.classList.add('is-leaving');
         document.body.classList.remove('page-preload');
       }, 1100);
+    });
+  })();
+</script>
+
+<script>
+  (function () {
+    var passwordInputs = document.querySelectorAll('input[type="password"]');
+    if (!passwordInputs.length) return;
+
+    passwordInputs.forEach(function (input) {
+      if (!input || input.dataset.toggleReady === '1') return;
+      input.dataset.toggleReady = '1';
+
+      var wrapper = document.createElement('div');
+      wrapper.className = 'password-toggle-wrap';
+      input.parentNode.insertBefore(wrapper, input);
+      wrapper.appendChild(input);
+
+      var toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'password-toggle-btn';
+      toggleBtn.textContent = 'Show';
+      toggleBtn.setAttribute('aria-label', 'Show password');
+      toggleBtn.setAttribute('aria-pressed', 'false');
+
+      toggleBtn.addEventListener('click', function () {
+        var isVisible = input.type === 'text';
+        input.type = isVisible ? 'password' : 'text';
+        toggleBtn.textContent = isVisible ? 'Show' : 'Hide';
+        toggleBtn.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+        toggleBtn.setAttribute('aria-pressed', isVisible ? 'false' : 'true');
+      });
+
+      wrapper.appendChild(toggleBtn);
     });
   })();
 </script>
