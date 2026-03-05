@@ -501,7 +501,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'regi
 
         $password = (string)($_POST['password'] ?? '');
         $confirmPassword = (string)($_POST['confirm_password'] ?? '');
-        $mustChangePassword = 0;
+        $newAdminMustChangePassword = 0;
 
         if ($fullName === '' || $username === '') {
             $setupError = 'Full name and username are required.';
@@ -519,7 +519,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'regi
         if ($setupError === '' && $adminCount > 0) {
             $password = defaultNewAdminPassword();
             $confirmPassword = defaultNewAdminPassword();
-            $mustChangePassword = 1;
+            $newAdminMustChangePassword = 1;
         }
 
         if ($setupError === '') {
@@ -538,7 +538,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrfValid && $postAction === 'regi
                     ':full_name' => $fullName,
                     ':username' => $username,
                     ':role' => $role,
-                    ':must_change_password' => $mustChangePassword,
+                    ':must_change_password' => $newAdminMustChangePassword,
                     ':password_hash' => password_hash($password, PASSWORD_DEFAULT),
                 ]);
 
