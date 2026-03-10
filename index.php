@@ -103,6 +103,7 @@ $allowedSocietalGroups = [
     'Sunday School',
     'Students Union',
     'CWA',
+    'Christian Mothers',
 ];
 $allowedAreaInterests = [
     'Ministry (Eg. Preaching/Evangelism)',
